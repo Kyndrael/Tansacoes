@@ -16,7 +16,7 @@ BEGIN
 
     START TRANSACTION;
 
-    -- Verificar se as contas existem
+    -- Verificar existência das contas
     IF NOT EXISTS (SELECT 1 FROM contas WHERE id = contaOrigem) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Conta de origem inexistente';
     END IF;
@@ -25,7 +25,7 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Conta de destino inexistente';
     END IF;
 
-    -- Debitar da conta de origem
+    -- Debitar
     SAVEPOINT antes_debito;
     UPDATE contas SET saldo = saldo - valor WHERE id = contaOrigem;
 
@@ -35,14 +35,15 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Saldo insuficiente';
     END IF;
 
-    -- Creditar na conta de destino
+    -- Creditar
     SAVEPOINT antes_credito;
     UPDATE contas SET saldo = saldo + valor WHERE id = contaDestino;
 
-    -- Registro no log e confirmação da transação
+    -- Registro no log
     INSERT INTO log_transferencias(conta_origem, conta_destino, valor, status)
     VALUES (contaOrigem, contaDestino, valor, 'Transferência realizada com sucesso');
 
+    -- Confirma transação
     COMMIT;
 
     SELECT 'Transferência realizada com sucesso.' AS status;
